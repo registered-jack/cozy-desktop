@@ -15,7 +15,7 @@ program
   .parse(process.argv)
 
 const scenarioArgPattern = new RegExp(path.join(
-  '^.*', '?test', 'scenarios', `([^${path.sep}]+)`, '?.*$'))
+  '^.*', '?test', 'scenarios', `([^${path.sep}]+)`, '?.*$').replace(/\\/g, '\\\\'))
 
 const scenarios = (args) => {
   if (args.length === 0) return scenarioHelpers.scenarios
