@@ -57,7 +57,7 @@ class App {
   */
 
   // basePath is the directory where the config and pouch are saved
-  constructor (basePath /*: string */) {
+  constructor (basePath /*: ?string */) {
     log.info(this.clientInfo(), 'constructor')
     this.lang = 'fr'
     if (basePath == null) { basePath = os.homedir() }
