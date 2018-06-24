@@ -115,7 +115,7 @@ class App {
   }
 
   // Return a promise for registering a device on the remote cozy
-  registerRemote (cozyUrl /*: string */, redirectURI /*: ?string */, onRegistered /*: ?Function */, deviceName /*: string */) {
+  registerRemote (cozyUrl /*: string */, redirectURI /*: ?string */, onRegistered /*: ?Function */, deviceName /*: ?string */) {
     const registration = new Registration(cozyUrl, this.config)
     return registration.process(pkg, redirectURI, onRegistered, deviceName)
   }
