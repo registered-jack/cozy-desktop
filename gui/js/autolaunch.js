@@ -1,6 +1,8 @@
+/* @flow */
+
 const AutoLaunch = require('auto-launch')
 
-const opts = {
+const opts /*: Object */ = {
   name: 'Cozy-Desktop',
   isHidden: true
 }
@@ -13,7 +15,7 @@ const autoLauncher = new AutoLaunch(opts)
 
 module.exports.isEnabled = () => autoLauncher.isEnabled()
 
-module.exports.setEnabled = (enabled) => {
+module.exports.setEnabled = (enabled /*: boolean */) => {
   autoLauncher.isEnabled().then((was) => {
     if (was !== enabled) {
       if (enabled) {

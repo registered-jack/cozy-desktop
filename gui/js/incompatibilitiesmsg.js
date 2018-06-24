@@ -1,6 +1,8 @@
+/* @flow */
+
 const {translate, interpolate, platformName} = require('./i18n')
 
-module.exports.incompatibilitiesErrorMessage = (i) => {
+module.exports.incompatibilitiesErrorMessage = (i /*: * */) => {
   const reasons = []
   const docType = translate(`Helpers ${i.docType}`)
   if (i.reservedChars) {

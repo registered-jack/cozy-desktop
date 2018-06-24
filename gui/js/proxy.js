@@ -1,9 +1,14 @@
+/* @flow */
 /* eslint standard/no-callback-literal: 0 */
 
 const ElectronProxyAgent = require('electron-proxy-agent')
 const url = require('url')
 const http = require('http')
 const https = require('https')
+
+/*::
+import type electron from 'electron'
+*/
 
 const log = require('../../core/app').logger({
   component: 'GUI:proxy'
@@ -27,7 +32,7 @@ log.debug({config}, 'argv')
 
 const formatCertificate = (certif) => `Certificate(${certif.issuerName} ${certif.subjectName})`
 
-module.exports = (app, session, userAgent, doneSetup) => {
+module.exports = (app /*: electron.app */, session /*: electron.session */, userAgent /*: string */, doneSetup /*: Function */) => {
   const loginByRealm = {}
   if (config['login-by-realm']) {
     config['login-by-realm'].split(',').forEach((lbr) => {
@@ -77,13 +82,18 @@ module.exports = (app, session, userAgent, doneSetup) => {
     opts.headers['User-Agent'] = userAgent
     return electronFetch(url, opts)
   }
+  // $FlowFixMe
   http.Agent.globalAgent = http.globalAgent = https.globalAgent = new ElectronProxyAgent(session.defaultSession)
   const _httpRequest = http.request
   http.request = function (options, cb) {
     log.warn(options, 'USING RAW HTTP REQUEST')
+    // $FlowFixMe
     options.agent = options.agent || http.globalAgent
+    // $FlowFixMe
     options.headers = options.headers || {}
+    // $FlowFixMe
     if (options.hostname) options.headers.host = options.hostname
+    // $FlowFixMe
     options.headers['User-Agent'] = userAgent
     return _httpRequest.call(http, options, cb)
   }
@@ -95,6 +105,7 @@ module.exports = (app, session, userAgent, doneSetup) => {
     } else {
       options = Object.assign({}, options)
     }
+    // $FlowFixMe
     options.agent = options.agent || https.globalAgent
     return _httpsRequest.call(https, options, cb)
   }

@@ -1,3 +1,5 @@
+/* @flow */
+
 const electron = require('electron')
 const {dialog, shell} = electron
 const {spawn} = require('child_process')
@@ -16,7 +18,7 @@ const popoverBounds = (wantedWidth, wantedHeight, trayposition, workArea, displa
   const actualWidth = Math.min(wantedWidth, Math.floor(0.9 * workArea.width))
   const actualHeight = Math.min(wantedHeight, Math.floor(0.9 * workArea.height))
 
-  const newBounds = {width: actualWidth, height: actualHeight}
+  const newBounds /*: Object */ = {width: actualWidth, height: actualHeight}
 
   if (platform === 'darwin') {
     // on MacOS, try to center the popup below the tray icon
@@ -69,7 +71,7 @@ const popoverBounds = (wantedWidth, wantedHeight, trayposition, workArea, displa
 const WindowManager = require('./window_manager')
 
 module.exports = class TrayWM extends WindowManager {
-  constructor (...opts) {
+  constructor (...opts /*: * */) {
     super(...opts)
     this.create().then(() => this.hide())
   }
@@ -97,15 +99,16 @@ module.exports = class TrayWM extends WindowManager {
   create () {
     let pReady = super.create()
     if (!this.desktop.config.gui.visibleOnBlur) {
-      this.win.on('blur', this.onBlur.bind(this))
+      this.win && this.win.on('blur', this.onBlur.bind(this))
     }
     return pReady
   }
 
-  show (trayPos) {
+  show (trayPos /*: * */) {
     this.log.debug('show')
     this.placeWithTray(DASHBOARD_SCREEN_WIDTH, DASHBOARD_SCREEN_HEIGHT, trayPos)
-    this.win.show()
+    this.win && this.win.show()
+    // $FlowFixMe
     return Promise.resolve(this.win)
   }
 
@@ -113,17 +116,19 @@ module.exports = class TrayWM extends WindowManager {
     return '#tray'
   }
 
-  placeWithTray (wantedWidth, wantedHeight, trayposition) {
-    const bounds = this.win.getBounds()
+  placeWithTray (wantedWidth /*: number */, wantedHeight /*: number */, trayposition /*: * */) {
+    const win = this.win
+    if (win == null) return
+    const bounds = win.getBounds()
     // TODO : be smarter about which display to use ?
     const displayObject = electron.screen.getDisplayMatching(bounds)
     const workArea = displayObject.workArea
     const display = displayObject.bounds
-    const popover = {bounds, wantedWidth, wantedHeight, trayposition, workArea, display}
+    const popover /*: Object */ = {bounds, wantedWidth, wantedHeight, trayposition, workArea, display}
 
     try {
       popover.newBounds = popoverBounds(wantedWidth, wantedHeight, trayposition, workArea, display, process.platform)
-      this.win.setBounds(popover.newBounds)
+      win.setBounds(popover.newBounds)
       log.trace({popover}, 'placeWithTray ok')
     } catch (err) {
       log.error({err, popover}, 'Fail to placeWithTray')
@@ -133,28 +138,31 @@ module.exports = class TrayWM extends WindowManager {
 
   onBlur () {
     setTimeout(() => {
-      if (!this.win.isFocused() && !this.win.isDevToolsFocused()) this.hide()
+      const win = this.win
+      if (win == null) return
+      if (!win.isFocused() && !win.isDevToolsFocused()) this.hide()
     }, 400)
   }
 
   hide () {
-    if (this.win) {
+    const win = this.win
+    if (win != null) {
       this.log.debug('hide')
-      this.win.hide()
+      win.hide()
     }
   }
 
   shown () {
-    return this.win.isVisible()
+    return this.win != null && this.win.isVisible()
   }
 
   ipcEvents () {
     return {
       'go-to-cozy': () => shell.openExternal(this.desktop.config.cozyUrl),
       'go-to-folder': () => shell.openItem(this.desktop.config.syncPath),
-      'auto-launcher': (event, enabled) => autoLaunch.setEnabled(enabled),
+      'auto-launcher': (event /*: * */, enabled /*: boolean */) => autoLaunch.setEnabled(enabled),
       'close-app': () => this.desktop.stopSync().then(() => this.app.quit()),
-      'open-file': (event, path) => this.openPath(path),
+      'open-file': (event /*: * */, path /*: string */) => this.openPath(path),
       'unlink-cozy': this.onUnlink
     }
   }

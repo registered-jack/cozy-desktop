@@ -1,9 +1,15 @@
+/* @flow */
+
 const {Menu} = require('electron')
 const {translate} = require('./i18n')
 
+/*::
+import type electron from 'electron'
+*/
+
 // FIXME: killme
 
-module.exports.buildAppMenu = (app) => {
+module.exports.buildAppMenu = (app /*: electron.app */) => {
   const template = [
     {
       label: translate('AppMenu Edit'),

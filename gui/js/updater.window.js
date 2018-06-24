@@ -1,3 +1,5 @@
+/* @flow */
+
 const WindowManager = require('./window_manager')
 const {autoUpdater} = require('electron-updater')
 const {translate} = require('./i18n')
@@ -9,6 +11,13 @@ const log = require('../../core/app').logger({
 const UPDATE_CHECK_TIMEOUT = 5000
 
 module.exports = class UpdaterWM extends WindowManager {
+  /*::
+  afterUpToDate: Function
+  app: *
+  desktop: *
+  skipped: boolean
+  timeout: *
+  */
   windowOptions () {
     return {
       title: 'UPDATER',
@@ -17,7 +26,7 @@ module.exports = class UpdaterWM extends WindowManager {
     }
   }
 
-  humanError (err) {
+  humanError (err /*: * */) {
     switch (err.code) {
       case 'EPERM': return translate('Updater Error EPERM')
       case 'ENOSP': return translate('Updater Error ENOSPC')
@@ -25,7 +34,8 @@ module.exports = class UpdaterWM extends WindowManager {
     }
   }
 
-  constructor (...opts) {
+  constructor (...opts /*: * */) {
+    super(...opts)
     autoUpdater.logger = log
     autoUpdater.on('update-available', (info) => {
       this.clearTimeoutIfAny()
@@ -58,8 +68,6 @@ module.exports = class UpdaterWM extends WindowManager {
         .catch((err) => this.send('error-updating', this.humanError(err)))
       )
     })
-
-    super(...opts)
   }
 
   clearTimeoutIfAny () {
@@ -69,7 +77,7 @@ module.exports = class UpdaterWM extends WindowManager {
     }
   }
 
-  onUpToDate (handler) {
+  onUpToDate (handler /*: Function */) {
     this.afterUpToDate = () => {
       this.clearTimeoutIfAny()
       handler()

@@ -1,8 +1,14 @@
+/* @flow */
+
 const {addFileManagerShortcut} = require('./shortcut')
 const {dialog, session} = require('electron')
 const autoLaunch = require('./autolaunch')
 const defaults = require('./defaults')
 const {translate} = require('./i18n')
+
+/*::
+import type desktop from '../../core/app'
+*/
 
 const log = require('../../core/app').logger({
   component: 'GUI'
@@ -18,6 +24,12 @@ const OAUTH_SCREEN_HEIGHT = 930
 const WindowManager = require('./window_manager')
 
 module.exports = class OnboardingWM extends WindowManager {
+  /*::
+  afterOnboarding: Function
+  desktop: desktop.App
+  shouldJumpToSyncPath: boolean
+  */
+
   windowOptions () {
     return {
       title: 'ONBOARDING',
@@ -46,7 +58,7 @@ module.exports = class OnboardingWM extends WindowManager {
     // through ports so we can trigger 'registration-done' without relying
     // on timeouts.
     this.send('registration-done')
-    this.win.webContents.once('dom-ready', () => {
+    this.win && this.win.webContents.once('dom-ready', () => {
       setTimeout(() => {
         this.send('registration-done')
         // XXX: Passing this as an event sender is a bit hacky...
@@ -64,11 +76,11 @@ module.exports = class OnboardingWM extends WindowManager {
       })
   }
 
-  onOnboardingDone (handler) {
+  onOnboardingDone (handler /*: Function */) {
     this.afterOnboarding = handler
   }
 
-  onRegisterRemote (event, arg) {
+  onRegisterRemote (event /*: * */, arg /*: * */) {
     let desktop = this.desktop
     let cozyUrl
     try {
@@ -83,15 +95,20 @@ module.exports = class OnboardingWM extends WindowManager {
       // TODO only centerOnScreen if needed to display the whole login screen
       //      and if the user hasn't moved the window before
       this.centerOnScreen(LOGIN_SCREEN_WIDTH, LOGIN_SCREEN_HEIGHT)
-      this.win.loadURL(url)
-      this.win.webContents.on('did-get-response-details', (event, status, newUrl, originalUrl, httpResponseCode) => {
+      const win = this.win
+      if (win == null) {
+        log.warn('Cannot handle registration completion: no more window!')
+        return Promise.resolve()
+      }
+      win.loadURL(url)
+      win.webContents.on('did-get-response-details', (event, status, newUrl, originalUrl, httpResponseCode) => {
         if (newUrl.match(/\/auth\/authorize\?/) && httpResponseCode === 200) {
           // TODO only centerOnScreen if needed to display the whole oauth screen
           //      and if the user hasn't moved the window before
           this.centerOnScreen(OAUTH_SCREEN_WIDTH, OAUTH_SCREEN_HEIGHT)
         }
       })
-      this.win.webContents.on('did-get-redirect-request', (event, oldUrl, newUrl) => {
+      win.webContents.on('did-get-redirect-request', (event, oldUrl, newUrl) => {
         if (newUrl.match('file://')) {
           // TODO only centerOnScreen if needed to display the whole folder screen
           //      and if the user hasn't moved the window before
@@ -101,18 +118,20 @@ module.exports = class OnboardingWM extends WindowManager {
       })
       return promise
     }
-    desktop.registerRemote(cozyUrl, arg.location, onRegistered)
+    desktop && desktop.registerRemote(cozyUrl, arg.location, onRegistered)
       .then(
         (reg) => {
           session.defaultSession.clearStorageData()
-          this.win.webContents.once('dom-ready', () => {
+          autoLaunch.setEnabled(true)
+          const win = this.win
+          if (!win) return
+          win.webContents.once('dom-ready', () => {
             setTimeout(() => {
               event.sender.send('registration-done')
               this.checkSyncPath(defaults.syncPath, event.sender)
             }, 20)
           })
-          this.win.loadURL(reg.client.redirectURI)
-          autoLaunch.setEnabled(true)
+          win.loadURL(reg.client.redirectURI)
         },
         (err) => {
           log.error(err)
@@ -127,7 +146,7 @@ module.exports = class OnboardingWM extends WindowManager {
       )
   }
 
-  onChooseFolder (event) {
+  onChooseFolder (event /*: * */) {
     // FIXME: The modal may appear on background, either every time (e.g. Ubuntu)
     // or only the second time (e.g. Fedora)
     let folders = dialog.showOpenDialog({
@@ -138,7 +157,7 @@ module.exports = class OnboardingWM extends WindowManager {
     }
   }
 
-  checkSyncPath (syncPath, eventSender) {
+  checkSyncPath (syncPath /*: string */, eventSender /*: * */) {
     const result = this.desktop.checkSyncPath(syncPath)
     eventSender.send('folder-chosen', {
       folder: result.syncPath,
@@ -147,7 +166,7 @@ module.exports = class OnboardingWM extends WindowManager {
     return result
   }
 
-  onStartSync (event, syncPath) {
+  onStartSync (event /*: * */, syncPath /*: string */) {
     const {error} = this.checkSyncPath(syncPath, event.sender)
     if (error) {
       log.warn({err: error})

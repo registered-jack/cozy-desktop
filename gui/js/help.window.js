@@ -1,3 +1,5 @@
+/* @flow */
+
 const WindowManager = require('./window_manager')
 const HELP_SCREEN_WIDTH = 768
 const HELP_SCREEN_HEIGHT = 570
@@ -22,7 +24,7 @@ module.exports = class TrayWM extends WindowManager {
   ipcEvents () {
     let that = this
     return {
-      'send-mail': (event, body) => {
+      'send-mail': (event /*: * */, body /*: string */) => {
         that.desktop.sendMailToSupport(body).then(
           () => { event.sender.send('mail-sent') },
           (err) => {

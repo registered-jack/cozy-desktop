@@ -1,7 +1,13 @@
+/* @flow */
+
 const {BrowserWindow, ipcMain, shell} = require('electron')
 const _ = require('lodash')
 const path = require('path')
 const electron = require('electron')
+
+/*::
+import type desktop from '../../core/app'
+*/
 
 const ELMSTARTUP = 400
 
@@ -10,7 +16,13 @@ const log = require('../../core/app').logger({
 })
 
 module.exports = class WindowManager {
-  constructor (app, desktop) {
+  /*::
+  app: electron.app
+  desktop: desktop.App
+  log: *
+  win: ?electron.BrowserWindow
+  */
+  constructor (app /*: electron.app */, desktop /*: desktop.App */) {
     this.win = null
     this.app = app
     this.desktop = desktop
@@ -49,16 +61,19 @@ module.exports = class WindowManager {
   }
 
   show () {
-    if (!this.win) return this.create()
+    const win = this.win
+    if (!win) return this.create()
     this.log.debug('show')
-    this.win.show()
-    return Promise.resolve(this.win)
+    win.show()
+    // $FlowFixMe
+    return Promise.resolve(win)
   }
 
   hide () {
-    if (this.win) {
+    const win = this.win
+    if (win) {
       this.log.debug('hide')
-      this.win.close()
+      win.close()
     }
     this.win = null
   }
@@ -72,13 +87,14 @@ module.exports = class WindowManager {
   }
 
   reload () {
-    if (this.win) {
+    const win = this.win
+    if (win) {
       this.log.debug('reload')
-      this.win.reload()
+      win.reload()
     }
   }
 
-  send (...args) {
+  send (...args /*: * */) {
     this.win && this.win.webContents && this.win.webContents.send(...args)
   }
 
@@ -86,15 +102,17 @@ module.exports = class WindowManager {
     return ''
   }
 
-  centerOnScreen (wantedWidth, wantedHeight) {
+  centerOnScreen (wantedWidth /*: number */, wantedHeight /*: number */) {
+    const win = this.win
+    if (win == null) return
     try {
-      const bounds = this.win.getBounds()
+      const bounds = win.getBounds()
       // TODO : be smarter about which display to use ?
       const display = electron.screen.getDisplayMatching(bounds)
       const displaySize = display.workArea
       const actualWidth = Math.min(wantedWidth, Math.floor(0.9 * displaySize.width))
       const actualHeight = Math.min(wantedHeight, Math.floor(0.9 * displaySize.height))
-      this.win.setBounds({
+      win.setBounds({
         x: Math.floor((displaySize.width - actualWidth) / 2),
         y: Math.floor((displaySize.height - actualHeight) / 2),
         width: actualWidth,
@@ -109,57 +127,58 @@ module.exports = class WindowManager {
     this.log.debug('create')
     const opts = this.windowOptions()
     opts.show = false
-    this.win = new BrowserWindow(opts)
-    this.win.on('unresponsive', () => { this.log.warn('Web page becomes unresponsive') })
-    this.win.on('responsive', () => { this.log.warn('Web page becomes responsive again') })
-    this.win.webContents.on('did-fail-load', (event, errorCode, errorDescription, url, isMainFrame) => {
+    const win = this.win = new BrowserWindow(opts)
+    win.on('unresponsive', () => { this.log.warn('Web page becomes unresponsive') })
+    win.on('responsive', () => { this.log.warn('Web page becomes responsive again') })
+    win.webContents.on('did-fail-load', (event, errorCode, errorDescription, url, isMainFrame) => {
       this.log.error({errorCode, url, isMainFrame}, errorDescription)
     })
     this.centerOnScreen(opts.width, opts.height)
 
     // openExternalLinks
-    this.win.webContents.on('will-navigate', (event, url) => {
+    win.webContents.on('will-navigate', (event, url) => {
       if (url.startsWith('http') && !url.match('/auth/authorize')) {
         event.preventDefault()
         shell.openExternal(url)
       }
     })
 
-    this.win.setVisibleOnAllWorkspaces(true)
+    win.setVisibleOnAllWorkspaces(true)
 
     // noMenu
-    this.win.setMenu(null)
-    this.win.setAutoHideMenuBar(true)
+    win.setMenu(null)
+    win.setAutoHideMenuBar(true)
 
     // Most windows (e.g. onboarding, help...) make the app visible in macOS
     // dock (and cmd+tab) by default. App is hidden when windows is closed to
     // allow per-window visibility.
     if (process.platform === 'darwin' && this.makesAppVisible()) {
       this.app.dock.show()
-      this.win.on('closed', () => { this.app.dock.hide() })
+      win.on('closed', () => { this.app.dock.hide() })
     }
 
     // dont keep  hidden windows objects
-    this.win.on('closed', () => { this.win = null })
+    win.on('closed', () => { this.win = null })
 
     let resolveCreate = null
     let promiseReady = new Promise((resolve, reject) => {
       resolveCreate = resolve
     }).catch((err) => log.error(err))
 
-    this.win.webContents.on('dom-ready', () => {
+    win.webContents.on('dom-ready', () => {
       setTimeout(() => {
-        this.win.show()
-        resolveCreate(this.win)
+        win.show()
+        // $FlowFixMe
+        resolveCreate(win)
       }, ELMSTARTUP)
     })
 
     let indexPath = path.resolve(__dirname, '..', 'index.html')
-    this.win.loadURL(`file://${indexPath}${this.hash()}`)
+    win.loadURL(`file://${indexPath}${this.hash()}`)
 
     // devTools
     if (process.env.WATCH === 'true' || process.env.DEBUG === 'true') {
-      this.win.webContents.openDevTools({mode: 'detach'})
+      win.webContents.openDevTools({mode: 'detach'})
     }
 
     return promiseReady

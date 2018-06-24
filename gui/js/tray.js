@@ -1,23 +1,31 @@
+/* @flow */
+
 const {Tray, Menu, MenuItem} = require('electron')
 const {translate} = require('./i18n')
 const path = require('path')
+
+/*::
+import type electron from 'electron'
+
+type ClickListener = (electron.Rectangle) => {}
+*/
 
 let tray = null
 
 const imgs = path.resolve(__dirname, '..', 'images')
 
-module.exports.init = (app, listener) => {
+module.exports.init = (app /*: electron.app */, listener /*: ClickListener */) => {
   let icon = (process.platform === 'darwin') ? `${imgs}/tray-icon-osx/idleTemplate.png`
      : (process.platform === 'win32') ? `${imgs}/tray-icon-win/idle.png`
      : (process.env.XDG_CURRENT_DESKTOP && process.env.XDG_CURRENT_DESKTOP.match(/KDE/)) ? `${imgs}/tray-icon-linux-kde/idle.png`
      : `${imgs}/tray-icon-linux/idle.png`
   tray = new Tray(icon)
-  app.on('before-quit', () => tray.destroy())
+  app.on('before-quit', () => { tray && tray.destroy() })
 
   let cachedBounds = null
   const clicked = (e, bounds) => {
     cachedBounds = (bounds && bounds.y !== 0) ? bounds : cachedBounds
-    listener(tray.getBounds ? tray.getBounds() : cachedBounds)
+    listener((tray && tray.getBounds) ? tray.getBounds() : cachedBounds)
   }
 
   tray.on('click', clicked)
@@ -89,7 +97,9 @@ if (newReleaseAvailable) {
 tray.setContextMenu(menu)
 */
 
-var setState = module.exports.setState = (state, filename) => {
+var setState = module.exports.setState = (state /*: string */, filename /*: ?string */) => {
+  if (tray == null) return
+
   let statusLabel = ''
   let icon = 'idle'
   if (state === 'error') {

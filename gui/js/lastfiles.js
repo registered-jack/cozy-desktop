@@ -1,5 +1,19 @@
+/* @flow */
+
 const fs = require('fs')
 const path = require('path')
+
+/*::
+import type desktop from '../../core/app'
+
+type LastFile = {
+  filename: string,
+  path: string,
+  icon: string,
+  size: number,
+  updated: number
+}
+*/
 
 let lastFilesPath = ''
 let lastFiles = []
@@ -8,7 +22,7 @@ const log = require('../../core/app').logger({
   component: 'GUI'
 })
 
-module.exports.init = (desktop) => {
+module.exports.init = (desktop /*: desktop.App */) => {
   lastFilesPath = path.join(desktop.basePath, 'last-files')
   fs.readFile(lastFilesPath, 'utf-8', (err, data) => {
     if (!err && data) {
@@ -29,10 +43,10 @@ module.exports.persists = () => {
 }
 
 module.exports.list = () => lastFiles
-module.exports.add = (file) => {
+module.exports.add = (file /*: string */) => {
   lastFiles.push(file)
   lastFiles = lastFiles.slice(-250)
 }
-module.exports.remove = (file) => {
+module.exports.remove = (file /*: LastFile */) => {
   lastFiles = lastFiles.filter((f) => f.path !== file.path)
 }

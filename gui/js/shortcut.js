@@ -1,3 +1,5 @@
+/* @flow */
+
 const lnk = require('lnk')
 const os = require('os')
 const path = require('path')
@@ -39,7 +41,7 @@ const sfltoolAddFavorite = (path) => {
 // For Windows <=> NT kernel version mapping, see:
 //   https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx
 //   https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions
-module.exports.addFileManagerShortcut = (config) => {
+module.exports.addFileManagerShortcut = (config /*: {syncPath: string} */) => {
   if (platform === 'win32' && major >= 10) {
     win10PinToHome(config.syncPath)
   } else if (platform === 'win32' && major >= 6) {
