@@ -95,7 +95,7 @@ class App {
 
   // Returns an object including the syncPath only when valid, or with an error
   // otherwise.
-  checkSyncPath (syncPath /*: string */) {
+  checkSyncPath (syncPath /*: string */) /*: {syncPath: string, error?: string} */ {
     // We do not allow syncing the whole user home directory, the system users
     // directory or the whole system:
     // - It would probably to big regarding the current local events squashing
