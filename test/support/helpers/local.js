@@ -122,6 +122,11 @@ class LocalTestHelpers {
   async readFile (path /*: string */) /*: Promise<string> */ {
     return this.syncDir.readFile(path)
   }
+
+  async initialScan () /*: Promise<void> */ {
+    await this.local.watcher.start()
+    await this.local.watcher.stop(true)
+  }
 }
 
 module.exports = {
