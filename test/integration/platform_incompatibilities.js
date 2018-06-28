@@ -10,6 +10,7 @@ const {
 } = require('mocha')
 const should = require('should')
 
+const logger = require('../../core/logger')
 const metadata = require('../../core/metadata')
 
 const Builders = require('../support/builders')
@@ -17,6 +18,8 @@ const configHelpers = require('../support/helpers/config')
 const cozyHelpers = require('../support/helpers/cozy')
 const pouchHelpers = require('../support/helpers/pouch')
 const { IntegrationTestHelpers } = require('../support/helpers/integration')
+
+const log = logger({component: 'mocha'})
 
 suite('Platform incompatibilities', () => {
   let builders, cozy, helpers
@@ -257,6 +260,36 @@ suite('Platform incompatibilities', () => {
         '/Trash/dir/file',
         'dir/',
         'dir/file'
+      ])
+    })
+
+    test('add remote incompatible dir with compatible file then run initial scan locally', async () => {
+      await helpers.remote.createTree([
+        'foo/',
+        'foo/bar:baz/',
+        'foo/bar:baz/qux'
+      ])
+
+      log.info('merge+sync incompatible dir')
+      await helpers.pullAndSyncAll()
+
+      log.info('check local tree')
+      should(await helpers.local.tree()).deepEqual([
+        'foo/'
+      ])
+
+      log.info('initial scan')
+      await helpers.local.initialScan()
+
+      log.info('merge+sync')
+      await helpers.syncAll()
+
+      log.info('check remote tree')
+      should(await helpers.remote.tree()).deepEqual([
+        '.cozy_trash/',
+        'foo/',
+        'foo/bar:baz/',
+        'foo/bar:baz/qux'
       ])
     })
   }
