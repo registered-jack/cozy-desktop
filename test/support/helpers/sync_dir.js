@@ -55,6 +55,10 @@ class SyncDirTestHelpers {
     // $FlowFixMe
     return checksumer.computeChecksumAsync(this.abspath(target))
   }
+
+  async stat (target /*: string|PathObject */) /*: Promise<string> */ {
+    return fs.stat(this.abspath(target))
+  }
 }
 
 module.exports = {
