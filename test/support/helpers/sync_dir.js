@@ -4,6 +4,7 @@ const autoBind = require('auto-bind')
 const Promise = require('bluebird')
 const fs = require('fs-extra')
 const path = require('path')
+const uuid = require('uuid/v4')
 
 const checksumer = require('../../../core/local/checksumer')
 const { getPath } = require('../../../core/utils/path')
@@ -58,6 +59,26 @@ class SyncDirTestHelpers {
 
   async stat (target /*: string|PathObject */) /*: Promise<string> */ {
     return fs.stat(this.abspath(target))
+  }
+
+  async move (src /*: string|PathObject */, dst /*: string|PathObject */) /*: Promise<string> */ {
+    await fs.move(
+      this.abspath(src),
+      this.abspath(dst)
+    )
+  }
+
+  async copyOutside (src /*: string|PathObject */) /*: Promise<string> */ {
+    const dst = this.generateOutsidePath(src)
+    await fs.copy(
+      this.abspath(src),
+      this.abspath(dst)
+    )
+    return dst
+  }
+
+  generateOutsidePath (target /*: string|PathObject */) /*: string */ {
+    return `../outside/${getPath(target)}-${uuid()}`
   }
 }
 
