@@ -135,7 +135,7 @@ class RemoteWatcher {
   }
 
   identifyChange (doc /*: RemoteDoc|RemoteDeletion */, was /*: ?Metadata */, changeIndex /*: number */, previousChanges /*: Array<RemoteChange|RemoteNoise> */) /*: RemoteChange|RemoteNoise */ {
-    log.trace({path: was ? was.path : _.get(doc, 'path'), doc, was}, 'change received')
+    log.debug({path: _.get(doc, 'path'), oldpath: _.get(was, 'path'), doc, was}, 'change received')
 
     if (doc._deleted) {
       if (was == null) {
@@ -199,7 +199,7 @@ class RemoteWatcher {
         this.prep.config.syncPath
       )
       if (incompatibilities.length > 0) {
-        log.trace({path, incompatibilities})
+        log.debug({path, oldpath: _.get(was, 'path'), incompatibilities})
         this.events.emit('platform-incompatibilities', incompatibilities)
         doc.incompatibilities = incompatibilities
       }
