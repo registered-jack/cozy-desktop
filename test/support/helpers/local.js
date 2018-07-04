@@ -3,8 +3,10 @@
 const autoBind = require('auto-bind')
 const Promise = require('bluebird')
 const fs = require('fs-extra')
+const _ = require('lodash')
 const path = require('path')
 const rimraf = require('rimraf')
+const should = require('should')
 
 const conflictHelpers = require('./conflict')
 const { SyncDirTestHelpers } = require('./sync_dir')
@@ -16,7 +18,10 @@ const rimrafAsync = Promise.promisify(rimraf)
 
 /*::
 import type Local from '../../../core/local'
-import type { ChokidarEvent } from '../../../core/local/chokidar_event'
+import type {
+  ChokidarEvent,
+  ChokidarEventType
+} from '../../../core/local/chokidar_event'
 */
 
 function posixifyPath (localPath /*: string */) /*: string */ {
@@ -126,6 +131,36 @@ class LocalTestHelpers {
   async initialScan () /*: Promise<void> */ {
     await this.local.watcher.start()
     await this.local.watcher.stop(true)
+  }
+
+  async startWatcherIdle () /*: Promise<void> */ {
+    await this.local.watcher.start()
+    await this.local.watcher.buffer.switchMode('idle')
+  }
+
+  async waitForEvents (expectedEventTypes /*: ChokidarEventType[] */, timeoutMs /*: number */ = 2000) {
+    expectedEventTypes = _.clone(expectedEventTypes).sort()
+
+    const stepMs = 100
+    let elapsedMs = stepMs
+    let actualEventTypes = []
+
+    while (elapsedMs < timeoutMs) {
+      await Promise.delay(stepMs)
+      elapsedMs = elapsedMs + stepMs
+
+      actualEventTypes = this.local.watcher.buffer.events.map(e => e.type).sort()
+      if (_.isEqual(actualEventTypes, expectedEventTypes)) return
+
+      // Stop waiting when events have no chance to match
+      if (actualEventTypes.length >= expectedEventTypes.length) break
+      if (_.difference(actualEventTypes, expectedEventTypes).length > 0) break
+    }
+
+    should.fail(
+      `Expected events ${JSON.stringify(expectedEventTypes)}\n` +
+      `Got ${JSON.stringify(actualEventTypes)}`
+    )
   }
 }
 
