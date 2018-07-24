@@ -291,6 +291,10 @@ module.exports = class Local /*:: implements Side */ {
     let parent = path.join(this.syncPath, path.dirname(doc.path))
 
     const oldPathExists = await fs.exists(oldPath)
+    const newPathExists = await fs.exists(newPath)
+
+    if (newPathExists) throw new Error(`File already exists: ${newPath}`)
+
     try {
       if (oldPathExists) {
         await fs.ensureDir(parent)
@@ -324,6 +328,8 @@ module.exports = class Local /*:: implements Side */ {
 
     const oldPathExists = await fs.exists(oldPath)
     const newPathExists = await fs.exists(newPath)
+
+    if (newPathExists) throw new Error(`Folder already exists: ${newPath}`)
 
     try {
       if (oldPathExists && newPathExists) {
