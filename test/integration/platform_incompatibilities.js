@@ -327,4 +327,29 @@ suite('Platform incompatibilities', () => {
     ])
     should(await helpers.incompatibleTree()).be.empty()
   })
+
+  test('same dirs except case -> first is created, second is incompatible', async () => {
+    await helpers.remote.createTree([
+      'alfred/',
+      'Alfred/'
+    ])
+    const incompatibleNames = []
+    helpers.events.on('platform-incompatibilities', incompatibilities => {
+      for (let i of incompatibilities) {
+        incompatibleNames.push(i.name)
+      }
+    })
+    await helpers.pullAndSyncAll()
+    should(await helpers.local.tree()).deepEqual([
+      // Fun fact: if alfred & Alfred were files, Alfred would have been created locally
+      'alfred/'
+    ])
+    should(await helpers.incompatibleTree()).deepEqual([
+      // Empty since alfred and Alfred have the same identity
+    ])
+    should(incompatibleNames).deepEqual([
+      // FIXME: Never received
+      'Alfred'
+    ])
+  })
 })
