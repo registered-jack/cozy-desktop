@@ -352,4 +352,17 @@ suite('Platform incompatibilities', () => {
       'Alfred'
     ])
   })
+
+  test.only('same dirs except case -> deleting second remotely does not delete anything locally', async () => {
+    const docs = await helpers.remote.createTree([
+      'alfred/',
+      'Alfred/'
+    ])
+    await helpers.pullAndSyncAll()
+    await cozy.files.trashById(docs['Alfred/']._id)
+    await helpers.pullAndSyncAll()
+    should(await helpers.local.tree()).deepEqual([
+      'alfred/'
+    ])
+  })
 })
