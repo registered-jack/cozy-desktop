@@ -22,14 +22,24 @@ describe('IdConflict', function () {
   describe('.detect()', () => {
     const sideName = 'remote' // whatever
 
-    it('returns an IdConflict object when a conflict exists between a new doc and an existing one', () => {
-      const existingDoc = builders.whatever().path('alfred').remoteId('1').build()
-      const newDoc = builders.whatever().path('Alfred').remoteId('2').build()
-      should(IdConflict.detect(sideName, newDoc, existingDoc)).deepEqual({
-        existingDoc,
-        newDoc,
-        platform,
-        sideName
+    onPlatforms('win32', 'darwin', () => {
+      it('returns an IdConflict object when a conflict exists between a new doc and an existing one', () => {
+        const existingDoc = builders.whatever().path('alfred').remoteId('1').build()
+        const newDoc = builders.whatever().path('Alfred').remoteId('2').build()
+        should(IdConflict.detect(sideName, newDoc, existingDoc)).deepEqual({
+          existingDoc,
+          newDoc,
+          platform,
+          sideName
+        })
+      })
+    })
+
+    onPlatforms('linux', () => {
+      it('returns nothing when a conflict would exist on other platforms', () => {
+        const existingDoc = builders.whatever().path('alfred').remoteId('1').build()
+        const newDoc = builders.whatever().path('Alfred').remoteId('2').build()
+        should(IdConflict.detect(sideName, newDoc, existingDoc)).be.undefined()
       })
     })
 

@@ -10,6 +10,10 @@ const Merge = require('../../core/merge')
 const metadata = require('../../core/metadata')
 
 const configHelpers = require('../support/helpers/config')
+const {
+  onPlatform,
+  onPlatforms
+} = require('../support/helpers/platform')
 const pouchHelpers = require('../support/helpers/pouch')
 const MetadataBuilders = require('../support/builders/metadata')
 
@@ -192,6 +196,44 @@ describe('Merge', function () {
 
       const result = await this.pouch.db.get(doc._id)
       should(result).deepEqual(old)
+    })
+
+    context('when folder could not coexist on Windows & macOS with one already in the Pouch', () => {
+      let renameConflictingDocAsync
+
+      beforeEach(function () {
+        this.merge[this.side] = {renameConflictingDocAsync: async () => {}}
+        renameConflictingDocAsync = sinon.stub(this.merge[this.side], 'renameConflictingDocAsync').resolves()
+      })
+
+      onPlatforms('win32', 'darwin', () => {
+        it('resolves the conflict', async function () {
+          const alfred = await builders.dir().path('alfred').create()
+          const Alfred = await builders.dir().path('Alfred').build()
+
+          await this.merge.putFolderAsync(this.side, Alfred)
+
+          should(await this.pouch.db.get(Alfred._id)).deepEqual(alfred)
+          should(renameConflictingDocAsync).have.been.calledOnce()
+          const [doc, dstPath] = renameConflictingDocAsync.args[0]
+          should(doc.path).equal(Alfred.path)
+          should(dstPath).match(/Alfred-conflict/)
+        })
+      })
+
+      onPlatform('linux', () => {
+        it('does has no conflict to resolve', async function () {
+          const alfred = await builders.dir().path('alfred').create()
+          const Alfred = await builders.dir().path('Alfred').build()
+
+          await this.merge.putFolderAsync(this.side, Alfred)
+
+          should(renameConflictingDocAsync).not.have.been.called()
+          // Same as Alfred except _rev was added
+          should(await this.pouch.db.get(Alfred._id)).have.properties(Alfred)
+          should(await this.pouch.db.get(alfred._id)).deepEqual(alfred)
+        })
+      })
     })
   })
 
