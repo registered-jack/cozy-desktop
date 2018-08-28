@@ -63,6 +63,11 @@ class IntegrationTestHelpers {
     await this.syncAll()
   }
 
+  async flushLocalAndSyncAll () {
+    await this.local.scan()
+    await this.syncAll()
+  }
+
   spyPouch () {
     sinon.spy(this._pouch, 'put')
     sinon.spy(this._pouch, 'bulkDocs')
