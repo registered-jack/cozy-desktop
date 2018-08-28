@@ -89,6 +89,14 @@ class ContextDir {
     // $FlowFixMe
     return checksumer.computeChecksumAsync(this.abspath(target))
   }
+
+  async rename (target /*: string|PathObject */, newName /*: string */) {
+    const oldPath = this.abspath(target)
+    const oldName = path.basename(oldPath)
+    const newPath = oldPath.replace(oldName, newName)
+
+    await fs.rename(oldPath, newPath)
+  }
 }
 
 module.exports = {
