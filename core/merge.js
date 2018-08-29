@@ -311,7 +311,7 @@ class Merge {
       if (idConflict) {
         log.warn({idConflict}, IdConflict.description(idConflict))
         await this.resolveConflictAsync(side, doc, folder)
-      } else if (folder && !doc.overwrite) {
+      } else if (folder && !doc.overwrite && doc.path === folder.path) {
         const dst = await this.resolveConflictAsync(side, doc, folder)
         dst.sides = {}
         dst.sides[side] = 1
