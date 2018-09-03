@@ -3,7 +3,7 @@
 /*:: import type { Scenario } from '..' */
 
 module.exports = ({
-  noremote: true,
+  // noremote: true,
   init: [
     {ino: 1, path: 'dir/'}
   ],
