@@ -135,6 +135,12 @@ function analyseEvents (events /*: LocalEvent[] */, pendingChanges /*: LocalChan
             break
           }
 
+          const addChange /*: ?LocalFileAddition */ = localChange.maybeAddFile(getChangeByInode(e))
+          if (addChange) {
+            changeFound(localChange.fileMoveIdentical(addChange, e))
+            break
+          }
+
           changeFound(localChange.fromEvent(e))
           break
         case 'unlink':

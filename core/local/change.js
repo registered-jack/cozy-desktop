@@ -38,6 +38,7 @@ module.exports = {
   fromEvent,
   fileMoveFromUnlinkAdd,
   fileMoveFromFileDeletionChange,
+  fileMoveIdentical,
   dirMoveFromUnlinkAdd,
   fileMoveFromAddUnlink,
   dirMoveFromAddUnlink,
@@ -205,6 +206,17 @@ function dirMoveFromAddUnlink (addChange /*: LocalDirAddition */, e /*: LocalDir
   log.debug({oldpath: e.path, path: addChange.path}, 'addDir + unlinkDir = DirMove')
   return build('DirMove', addChange.path, {
     stats: addChange.stats,
+    old: e.old,
+    ino: addChange.ino,
+    wip: addChange.wip
+  })
+}
+
+function fileMoveIdentical (addChange /*: LocalFileAddition */, e /*: LocalFileUpdated */) /*: * */ {
+  log.debug({oldpath: addChange.path, path: e.path}, 'add + change = FileMove (identical)')
+  return build('FileMove', addChange.path, {
+    stats: e.stats,
+    md5sum: e.md5sum,
     old: e.old,
     ino: addChange.ino,
     wip: addChange.wip
