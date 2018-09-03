@@ -41,6 +41,7 @@ module.exports = {
   dirMoveFromUnlinkAdd,
   fileMoveFromAddUnlink,
   dirMoveFromAddUnlink,
+  dirRenamingCaseOnlyFromAddAdd,
   includeAddEventInFileMove,
   includeAddDirEventInDirMove,
   includeChangeEventIntoFileMove,
@@ -207,6 +208,17 @@ function dirMoveFromAddUnlink (addChange /*: LocalDirAddition */, e /*: LocalDir
     old: e.old,
     ino: addChange.ino,
     wip: addChange.wip
+  })
+}
+
+// TODO: DirMove builder enforcing != src/dst paths?
+function dirRenamingCaseOnlyFromAddAdd (addChange /*: LocalDirAddition */, e /*: LocalDirAdded */) /*: * */ {
+  log.debug({oldpath: addChange.path, path: e.path}, 'addDir + addDir = DirMove (case-only renaming)')
+  return build('DirMove', e.path, {
+    stats: addChange.stats,
+    old: addChange.old,
+    ino: addChange.ino,
+    wip: e.wip
   })
 }
 

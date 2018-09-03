@@ -112,6 +112,11 @@ function analyseEvents (events /*: LocalEvent[] */, pendingChanges /*: LocalChan
               changeFound(localChange.dirMoveFromUnlinkAdd(unlinkChange, e))
               break
             }
+            const addChange /*: ?LocalDirAddition */ = localChange.maybePutFolder(getChangeByInode(e))
+            if (addChange) {
+              changeFound(localChange.dirRenamingCaseOnlyFromAddAdd(addChange, e))
+              break
+            }
             changeFound(localChange.fromEvent(e))
           }
           break
