@@ -105,14 +105,14 @@ function analyseEvents (events /*: LocalEvent[] */, pendingChanges /*: LocalChan
             const moveChange /*: ?LocalDirMove */ = localChange.maybeMoveFolder(getChangeByInode(e))
             if (moveChange) {
               localChange.includeAddDirEventInDirMove(moveChange, e)
-            } else {
-              const unlinkChange /*: ?LocalDirDeletion */ = localChange.maybeDeleteFolder(getChangeByInode(e))
-              if (unlinkChange) {
-                changeFound(localChange.dirMoveFromUnlinkAdd(unlinkChange, e))
-              } else {
-                changeFound(localChange.fromEvent(e))
-              }
+              break
             }
+            const unlinkChange /*: ?LocalDirDeletion */ = localChange.maybeDeleteFolder(getChangeByInode(e))
+            if (unlinkChange) {
+              changeFound(localChange.dirMoveFromUnlinkAdd(unlinkChange, e))
+              break
+            }
+            changeFound(localChange.fromEvent(e))
           }
           break
         case 'change':
