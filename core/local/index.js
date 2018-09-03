@@ -321,7 +321,7 @@ module.exports = class Local /*:: implements Side */ {
     let oldPath = path.join(this.syncPath, old.path)
     let newPath = path.join(this.syncPath, doc.path)
 
-    if (await fs.exists(newPath)) {
+    if (doc._id !== old._id && await fs.stat(newPath)) {
       throw new Error(`Move destination already exists: ${newPath}`)
     }
 
