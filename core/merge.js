@@ -279,7 +279,7 @@ class Merge {
       if (file && sameFile(file, doc)) {
         log.info({path}, 'up to date (move)')
         return null
-      } else if (file && !doc.overwrite) {
+      } else if (file && !doc.overwrite && doc.path === file.path) {
         const dst = await this.resolveConflictAsync(side, doc, file)
         was.moveTo = dst._id
         dst.sides = {}
