@@ -288,27 +288,13 @@ module.exports = class Local /*:: implements Side */ {
     log.info({path: doc.path}, `Moving from ${old.path}`)
     let oldPath = path.join(this.syncPath, old.path)
     let newPath = path.join(this.syncPath, doc.path)
-    let parent = path.join(this.syncPath, path.dirname(doc.path))
 
-    const oldPathExists = await fs.exists(oldPath)
-    try {
-      if (oldPathExists) {
-        await fs.ensureDir(parent)
-        await fs.rename(oldPath, newPath)
-      } else {
-        const newPathExists = await fs.exists(newPath)
-        if (!newPathExists) {
-          const msg = `File ${oldPath} not found`
-          log.error({path: newPath}, msg)
-          throw new Error(msg)
-        }
-      }
-      await this.updateMetadataAsync(doc)
-    } catch (err) {
-      log.error({path: newPath, doc, old, err}, 'File move failed! Falling back to file download...')
-      await this.addFileAsync(doc)
-      return
+    if (doc._id !== old._id && await fs.stat(newPath)) {
+      throw new Error(`Move destination already exists: ${newPath}`)
     }
+
+    await fs.rename(oldPath, newPath)
+    await this.updateMetadataAsync(doc)
 
     if (doc.md5sum !== old.md5sum) {
       await this.overwriteFileAsync(doc)
