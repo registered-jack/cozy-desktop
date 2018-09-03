@@ -326,9 +326,7 @@ module.exports = class Local /*:: implements Side */ {
     const newPathExists = await fs.exists(newPath)
 
     try {
-      if (oldPathExists && newPathExists) {
-        await fs.rmdir(oldPath)
-      } else if (oldPathExists) {
+      if (oldPathExists) {
         await fs.ensureDir(parent)
         await fs.rename(oldPath, newPath)
       } else if (!newPathExists) {
