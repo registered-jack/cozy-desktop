@@ -1,5 +1,8 @@
 [
   {
+    "breakpoints": [0]
+  },
+  {
     "type": "addDir",
     "path": "dir-case",
     "stats": {
