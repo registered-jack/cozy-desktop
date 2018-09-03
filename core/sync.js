@@ -297,6 +297,11 @@ class Sync {
     } else if (rev === 0) {
       await this.doAdd(side, doc)
     } else {
+      if (sideName === 'remote' && !doc.remote && !this.remote.fixRemoteLink(doc)) {
+        // create conflict
+        console.log("GOD DAMN")
+      }
+
       let old
       try {
         old = await this.pouch.getPreviousRevAsync(doc._id, rev)

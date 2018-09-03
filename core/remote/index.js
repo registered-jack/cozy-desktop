@@ -5,6 +5,7 @@ const Promise = require('bluebird')
 const { posix, sep } = require('path')
 
 const conversion = require('../conversion')
+const metadata = require('../metadata')
 const { RemoteCozy } = require('./cozy')
 const logger = require('../logger')
 const { RemoteWarningPoller } = require('./warning_poller')
@@ -299,6 +300,29 @@ module.exports = class Remote /*:: implements Side */ {
     log.info({path: doc.path}, 'Assigning new rev...')
     const {_rev} = await this.remoteCozy.client.files.statById(doc.remote._id)
     doc.remote._rev = _rev
+  }
+
+  // hack in case of broken state doc without remote
+  // return false if it cant fix the issue
+  async fixRemoteLink (doc /*: Metadata */) /*: Promise<boolean> */ {
+    const old/* :RemoteDoc */ = await this.remoteCozy.client.statByPath(doc.path)
+
+    if (!old) {
+      if (doc.docType === 'file') this.addFileAsync(doc)
+      else this.addFolderAsync(doc)
+      return true // solved
+    }
+
+    const remoteDoc = conversion.createMetadata(old)
+    if (!metadata.same(doc, remoteDoc)) {
+      // we cant apply this change
+    }
+
+    doc.remote = {
+      _id: old._id,
+      _rev: old._rev
+    }
+    return true
   }
 
   async moveFolderAsync (newMetadata /*: Metadata */, oldMetadata /*: Metadata */) /*: Promise<void> */ {

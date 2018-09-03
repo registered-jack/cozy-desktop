@@ -97,6 +97,7 @@ module.exports = {
   ensureValidChecksum,
   extractRevNumber,
   isUpToDate,
+  same,
   sameFolder,
   sameFile,
   sameFileIgnoreRev,
@@ -276,6 +277,11 @@ const makeComparator = (name, interestingFields) => {
     log.trace({path: two.path, diff}, 'sameFolder')
     return !diff
   }
+}
+
+function same (one /*: Metadata */, two /*: Metadata */) {
+  return (one.docType === 'file' && two.docType === 'file ' && sameFile(one, two)) ||
+    (one.docType === 'folder' && two.docType === 'folder ' && sameFolder(one, two))
 }
 
 // Return true if the metadata of the two folders are the same

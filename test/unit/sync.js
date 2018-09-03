@@ -492,6 +492,18 @@ describe('Sync', function () {
       name.should.equal('remote')
       rev.should.equal(0)
       doc = {
+        _id: 'selectSide/3',
+        _rev: '1-0123456789',
+        docType: 'file',
+        sides: {
+          local: 3
+        }
+      };
+      [side, name, rev] = this.sync.selectSide(doc)
+      side.should.equal(this.sync.remote)
+      name.should.equal('remote')
+      rev.should.equal(0)
+      doc = {
         _id: 'selectSide/4',
         _rev: '4-0123456789',
         docType: 'file',

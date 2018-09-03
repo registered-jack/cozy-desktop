@@ -144,6 +144,10 @@ class RemoteCozy {
     }
   }
 
+  async findByPath (path/*: string */)/*: Promise<RemoteDoc> */ {
+    return this.client.statByPath(path).then(this.toRemoteDoc)
+  }
+
   async findDirectoryByPath (path/*: string */)/*: Promise<RemoteDoc> */ {
     const index = await this.client.data.defineIndex(FILES_DOCTYPE, ['path'])
     const results = await this.client.data.query(index, {selector: {path}})
