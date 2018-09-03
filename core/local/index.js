@@ -286,30 +286,7 @@ module.exports = class Local /*:: implements Side */ {
   // Move a file from one place to another
   async moveFileAsync (doc /*: Metadata */, old /*: Metadata */) /*: Promise<void> */ {
     log.info({path: doc.path, oldpath: old.path}, 'Moving file')
-    let oldPath = path.join(this.syncPath, old.path)
-    let newPath = path.join(this.syncPath, doc.path)
-    let parent = path.join(this.syncPath, path.dirname(doc.path))
-
-    const oldPathExists = await fs.exists(oldPath)
-    try {
-      if (oldPathExists) {
-        await fs.ensureDir(parent)
-        await fs.rename(oldPath, newPath)
-      } else {
-        const newPathExists = await fs.exists(newPath)
-        if (!newPathExists) {
-          const msg = `File ${oldPath} not found`
-          log.error({path: newPath}, msg)
-          throw new Error(msg)
-        }
-      }
-      await this.updateMetadataAsync(doc)
-    } catch (err) {
-      log.error({path: newPath, doc, old, err}, 'File move failed! Falling back to file download...')
-      await this.addFileAsync(doc)
-      return
-    }
-
+    await this._move(doc, old)
     if (doc.md5sum !== old.md5sum) {
       await this.overwriteFileAsync(doc)
     }
@@ -318,28 +295,30 @@ module.exports = class Local /*:: implements Side */ {
   // Move a folder
   async moveFolderAsync (doc /*: Metadata */, old /*: Metadata */) /*: Promise<void> */ {
     log.info({path: doc.path, oldpath: old.path}, 'Moving folder')
+    await this._move(doc, old)
+  }
+
+  async _move (doc /*: Metadata */, old /*: Metadata */) /*: Promise<void> */ {
     let oldPath = path.join(this.syncPath, old.path)
     let newPath = path.join(this.syncPath, doc.path)
-    let parent = path.join(this.syncPath, path.dirname(doc.path))
 
-    const oldPathExists = await fs.exists(oldPath)
-    const newPathExists = await fs.exists(newPath)
+    if (doc._id !== old._id) {
+      await this._ensureNotExists(newPath)
+    }
 
+    await fs.rename(oldPath, newPath)
+    await this.updateMetadataAsync(doc)
+  }
+
+  async _ensureNotExists (newPath /*: string */) /*: Promise<void> */ {
     try {
-      if (oldPathExists && newPathExists) {
-        await fs.rmdir(oldPath)
-      } else if (oldPathExists) {
-        await fs.ensureDir(parent)
-        await fs.rename(oldPath, newPath)
-      } else if (!newPathExists) {
-        const msg = `Folder ${oldPath} not found`
-        log.error({path: newPath}, msg)
-        throw new Error(msg)
-      }
-      await this.updateMetadataAsync(doc)
+      const stats = await fs.stat(newPath)
+      const err = new Error(`Move destination already exists: ${newPath}`)
+      // $FlowFixMe
+      err.stats = stats
+      throw err
     } catch (err) {
-      log.error({path: newPath, doc, old, err}, 'Folder move failed! Falling back to folder creation...')
-      await this.addFolderAsync(doc)
+      if (err.code !== 'ENOENT') throw err
     }
   }
 
