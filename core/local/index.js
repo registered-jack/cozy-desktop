@@ -320,25 +320,13 @@ module.exports = class Local /*:: implements Side */ {
     log.info({path: doc.path}, `Move folder from ${old.path}`)
     let oldPath = path.join(this.syncPath, old.path)
     let newPath = path.join(this.syncPath, doc.path)
-    let parent = path.join(this.syncPath, path.dirname(doc.path))
 
-    const oldPathExists = await fs.exists(oldPath)
-    const newPathExists = await fs.exists(newPath)
-
-    try {
-      if (oldPathExists) {
-        await fs.ensureDir(parent)
-        await fs.rename(oldPath, newPath)
-      } else if (!newPathExists) {
-        const msg = `Folder ${oldPath} not found`
-        log.error({path: newPath}, msg)
-        throw new Error(msg)
-      }
-      await this.updateMetadataAsync(doc)
-    } catch (err) {
-      log.error({path: newPath, doc, old, err}, 'Folder move failed! Falling back to folder creation...')
-      await this.addFolderAsync(doc)
+    if (await fs.exists(newPath)) {
+      throw new Error(`Move destination already exists: ${newPath}`)
     }
+
+    await fs.rename(oldPath, newPath)
+    await this.updateMetadataAsync(doc)
   }
 
   async trashAsync (doc /*: Metadata */) /*: Promise<void> */ {
