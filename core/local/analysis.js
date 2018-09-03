@@ -132,9 +132,10 @@ function analyseEvents (events /*: LocalEvent[] */, pendingChanges /*: LocalChan
           if (unlinkChange) {
             const moveChange = localChange.fileMoveFromFileDeletionChange(unlinkChange, e)
             changeFound(moveChange)
-          } else {
-            changeFound(localChange.fromEvent(e))
+            break
           }
+
+          changeFound(localChange.fromEvent(e))
           break
         case 'unlink':
           {
