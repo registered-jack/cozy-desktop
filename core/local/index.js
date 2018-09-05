@@ -302,24 +302,9 @@ module.exports = class Local /*:: implements Side */ {
     let oldPath = path.join(this.syncPath, old.path)
     let newPath = path.join(this.syncPath, doc.path)
 
-    if (doc._id !== old._id) {
-      await this._ensureNotExists(newPath)
-    }
-
+    if (doc._id !== old._id) await _ensureNotExists(newPath)
     await fs.rename(oldPath, newPath)
     await this.updateMetadataAsync(doc)
-  }
-
-  async _ensureNotExists (newPath /*: string */) /*: Promise<void> */ {
-    try {
-      const stats = await fs.stat(newPath)
-      const err = new Error(`Move destination already exists: ${newPath}`)
-      // $FlowFixMe
-      err.stats = stats
-      throw err
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err
-    }
   }
 
   async trashAsync (doc /*: Metadata */) /*: Promise<void> */ {
@@ -356,5 +341,17 @@ module.exports = class Local /*:: implements Side */ {
     let dstPath = path.join(this.syncPath, newPath)
     fs.rename(srcPath, dstPath, callback)
     // TODO: Don't fire an event for the deleted file?
+  }
+}
+
+async function _ensureNotExists (newPath /*: string */) /*: Promise<void> */ {
+  try {
+    const stats = await fs.stat(newPath)
+    const err = new Error(`Move destination already exists: ${newPath}`)
+    // $FlowFixMe
+    err.stats = stats
+    throw err
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err
   }
 }
