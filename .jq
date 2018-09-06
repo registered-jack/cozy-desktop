@@ -41,6 +41,7 @@ def Prep: select(.component == "Prep");
 def Merge: select(.component == "Merge");
 def Metadata: select(.component == "Metadata");
 def Pouch: select(.component == "Pouch");
+def RemoteWatcher: select(.component == "RemoteWatcher");
 def Sync: select(.component == "Sync");
 
 # Find conflicts:
