@@ -256,6 +256,9 @@ class RemoteWatcher {
               detail: `File was moved as descendant of ${_.get(previousChange, 'doc.path')}`
             }
           }
+        } else if (previousChange.type === 'FileTrashing' && previousChange.was._id === change.doc._id) {
+          change.doc.overwrite = previousChange.was
+          previousChanges[previousChangeIndex] = change
         }
       }
       return change
