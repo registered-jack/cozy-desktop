@@ -242,6 +242,24 @@ describe('RemoteWatcher', function () {
     })
   })
 
+  describe('#analyse()', () => {
+    it.skip('detects a FileMove overwriting its destination', function () {
+      const remoteDstDoc = builders.remote.file().named('bar').data('foo').build()
+      const doc = createMetadata(remoteDstDoc)
+      ensureValidPath(doc)
+      assignId(doc)
+      const was = _.defaults({path: 'foo'}, doc)
+      const remoteDocs = [remoteDstDoc]
+      const existingDocs = [was]
+
+      const changes = this.watcher.analyse(remoteDocs, existingDocs)
+
+      should(changes).deepEqual([
+        {type: 'FileMove', sideName: 'remote', doc, was}
+      ])
+    })
+  })
+
   describe('identifyChange', function () {
     it('does not fail when the path is missing', function () {
       let doc /*: RemoteDoc */ = {
