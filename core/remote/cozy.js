@@ -16,6 +16,14 @@ import type Config from '../config'
 import type { Readable } from 'stream'
 import type { RemoteDoc, RemoteDeletion } from './document'
 import type { Warning } from './warning'
+
+export type RemoteFileCorruption = {
+  _id: string,
+  _rev: string,
+  path: string,
+  md5sum: string
+};
+
 */
 
 const log = logger({
@@ -215,6 +223,14 @@ class RemoteCozy {
         default: throw err
       }
     }
+  }
+
+  // TODO with tests
+  async fetchFileCorruptions () /*: Promise<RemoteFileCorruption[]> */ {
+    // API goes there
+    // const url = '/'
+    // const resp = await this.client.fetchJSON('GET', url)
+    return []
   }
 }
 

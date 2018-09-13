@@ -20,6 +20,7 @@ import type Ignore from './ignore'
 import type Local from './local'
 import type Pouch from './pouch'
 import type Remote from './remote'
+import type { RemoteFileCorruption } from './remote/cozy'
 import type { SideName, Metadata } from './metadata'
 import type { Side } from './side' // eslint-disable-line
 */
@@ -88,6 +89,7 @@ class Sync {
   async start (mode /*: SyncMode */) /*: Promise<*> */ {
     this.stopped = false
     await this.pouch.addAllViewsAsync()
+    await this.fixCorruptFiles()
     let sidePromises = []
     if (mode !== 'pull') {
       await this.local.start()
@@ -330,6 +332,7 @@ class Sync {
 
   async doOverwrite (side /*: Side */, doc /*: Metadata */) /*: Promise<void> */ {
     if (doc.docType === 'file') {
+      // TODO: risky overwrite without If-Match
       await side.overwriteFileAsync(doc, null)
       this.events.emit('transfer-started', _.clone(doc))
     } else {
@@ -480,6 +483,26 @@ class Sync {
     log.info(`${doc.path}: should be trashed by itself`)
     await side.trashAsync(doc)
     return true
+  }
+
+  shouldReuploadCorruptFile (doc/*: Metadata */, corruption /*: RemoteFileCorruption */) /*: boolean */{
+    return extractRevNumber(doc.remote) >= extractRevNumber(corruption)
+  }
+
+  async fixCorruptFiles () {
+    const corruptFiles = await this.remote.remoteCozy.fetchFileCorruptions()
+    for (var corruptFile of corruptFiles) {
+      const doc = await this.pouch.byRemoteIdMaybeAsync(corruptFile._id)
+      if (this.shouldReuploadCorruptFile(doc, corruptFile)) {
+        try {
+          // $FlowFixMe
+          await this.remote.overwriteFileAsync(doc, {remote: corruptFile})
+          await this.updateRevs(doc, 'local')
+        } catch (err) {
+          log.error({err, doc, corruptFile}, 'Fail to fix file')
+        }
+      }
+    }
   }
 }
 
