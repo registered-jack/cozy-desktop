@@ -491,9 +491,12 @@ class Sync {
 
   async fixCorruptFiles () {
     const corruptFiles = await this.remote.remoteCozy.fetchFileCorruptions()
+    log.info(`Stack is reporting ${corruptFiles.length} corrupted`)
+
     for (var corruptFile of corruptFiles) {
       const doc = await this.pouch.byRemoteIdMaybeAsync(corruptFile._id)
       if (this.shouldReuploadCorruptFile(doc, corruptFile)) {
+        log.info({doc, corruptFile}, `Attempting to reupload`)
         try {
           // $FlowFixMe
           await this.remote.overwriteFileAsync(doc, {remote: corruptFile})

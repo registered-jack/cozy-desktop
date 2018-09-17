@@ -47,6 +47,7 @@ class RemoteCozy {
   /*::
   url: string
   client: CozyClient
+  _corruptedDocs:? RemoteFileCorruption[]
   */
 
   constructor (config/*: Config */) {

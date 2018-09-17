@@ -3,16 +3,20 @@
 const autoBind = require('auto-bind')
 const _ = require('lodash')
 const path = require('path')
+const { Transform } = require('stream')
 
 const conflictHelpers = require('./conflict')
 
 const { TRASH_DIR_NAME } = require('../../../core/remote/constants')
+const { withContentLength } = require('../../../core/file_stream_provider')
 
 /*::
 import type cozy from 'cozy-client-js'
 import type Pouch from '../../../core/pouch'
 import type Remote from '../../../core/remote'
+import type { Metadata } from '../../../core/metadata'
 import type { RemoteDoc } from '../../../core/remote/document'
+import type { ReadableWithContentLength } from '../../../core/file_stream_provider'
 */
 
 class RemoteTestHelpers {
@@ -103,6 +107,44 @@ class RemoteTestHelpers {
       .map(p => _.nth(p.match(TRASH_REGEXP), 1))
       .compact()
       .value()
+  }
+
+  startMockingCorruptDownloads () {
+    if (this.remote.remoteCozy._corruptedDocs) throw new Error('Already corrupting')
+    const normalCreateStream = this.remote.createReadStreamAsync
+    const normalFetchCorruptions = this.remote.remoteCozy.fetchFileCorruptions
+    const corruptedDocs = []
+    this.remote.remoteCozy._corruptedDocs = corruptedDocs
+
+    // $FlowFixMe flow dislike monkey patch
+    this.remote.createReadStreamAsync = async (doc /*: Metadata */) /*: Promise<ReadableWithContentLength> */ => {
+      corruptedDocs.push({
+        path: doc.path,
+        _id: doc.remote._id,
+        _rev: doc.remote._rev,
+        md5sum: doc.md5sum
+      })
+      const corruptedStream = (await normalCreateStream.call(this.remote, doc)).pipe(new Transform({
+        transform: function (chunk, encoding, callback) {
+          this.push(chunk.slice(3)) // Drop 3 bytes
+          callback()
+        }
+      }))
+      return withContentLength(corruptedStream, doc.size)
+    }
+
+    // $FlowFixMe flow dislike monkey patch
+    this.remote.remoteCozy.fetchFileCorruptions = async () /*: Promise<RemoteFileCorruption[]> */ => corruptedDocs
+
+    const stopCorruptDownloads = () => {
+      delete this.remote.remoteCozy._corruptedDocs
+      // $FlowFixMe flow dislike monkey patch
+      this.remote.createReadStreamAsync = normalCreateStream
+      // $FlowFixMe flow dislike monkey patch
+      this.remote.remoteCozy.fetchFileCorruptions = normalFetchCorruptions
+    }
+
+    return stopCorruptDownloads
   }
 
   async simulateChanges (docs /*: * */) {
