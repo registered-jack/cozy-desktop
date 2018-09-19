@@ -495,7 +495,7 @@ class Sync {
 
     for (var corruptFile of corruptFiles) {
       const doc = await this.pouch.byRemoteIdMaybeAsync(corruptFile._id)
-      if (this.shouldReuploadCorruptFile(doc, corruptFile)) {
+      if (doc && this.shouldReuploadCorruptFile(doc, corruptFile)) {
         log.info({doc, corruptFile}, `Attempting to reupload`)
         try {
           // $FlowFixMe

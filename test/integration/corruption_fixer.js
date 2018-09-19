@@ -36,14 +36,21 @@ suite('Re-Upload files when the stack report them as broken', () => {
 
   test('Handle corrupted files', async () => {
     await helpers.remote.ignorePreviousChanges()
-    const stopCorrupting = await helpers.remote.startMockingCorruptDownloads()
-    const file = await cozy.files.create('basecontent', {name: 'file'})
+
+    const file = await cozy.files.create('file-ok-content', {name: 'file-ok'})
     await helpers.remote.pullChanges()
+    await helpers.syncAll()
+    should(await helpers.local.tree()).deepEqual(['file-ok'])
+
+    const stopCorrupting = await helpers.remote.startMockingCorruptDownloads()
+    const file2 = await cozy.files.create('file-corrupted-content', {name: 'file-corrupted'})
+    await cozy.files.updateById(file._id, 'file-ok-new-content')
 
     // expect error
+    await helpers.remote.pullChanges()
     await helpers.syncAll()
-    should(await helpers.local.tree()).deepEqual([])
-    const oldFile = await helpers._pouch.byRemoteIdMaybeAsync(file._id)
+    should(await helpers.local.tree()).deepEqual(['file-ok'])
+    const oldFile = await helpers._pouch.byRemoteIdMaybeAsync(file2._id)
     should(oldFile.errors).eql(2)
     should(oldFile.sides.remote).eql(3) // ?
 
@@ -51,7 +58,7 @@ suite('Re-Upload files when the stack report them as broken', () => {
     await helpers._sync.fixCorruptFiles()
     await stopCorrupting()
 
-    await helpers.remote.pullChanges()
     await helpers.syncAll()
+    should(await helpers.local.tree()).deepEqual(['file-ok'])
   })
 })
