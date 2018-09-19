@@ -10,6 +10,10 @@ const Merge = require('../../core/merge')
 const metadata = require('../../core/metadata')
 
 const configHelpers = require('../support/helpers/config')
+const {
+  onPlatform,
+  onPlatforms
+} = require('../support/helpers/platform')
 const pouchHelpers = require('../support/helpers/pouch')
 const MetadataBuilders = require('../support/builders/metadata')
 
@@ -88,6 +92,32 @@ describe('Merge', function () {
         res.mime.should.equal(was.mime)
         res.sides.local.should.equal(2)
         res.ino.should.equal(was.ino)
+      })
+    })
+
+    onPlatforms('win32', 'darwin', () => {
+      it('resolves an identity conflict with an existing file', async function () {
+        await builders.file().path('bar').create()
+        const doc = builders.file().path('BAR').build()
+        sinon.spy(this.pouch, 'put')
+
+        await this.merge.addFileAsync(this.side, doc)
+
+        should(this.merge.resolveConflictAsync).have.been.calledWith(this.side, doc)
+        should(this.pouch.put).not.have.been.called()
+      })
+    })
+
+    onPlatforms('linux', () => {
+      it('does not have identity conflicts', async function () {
+        await builders.file().path('bar').create()
+        const doc = builders.file().path('BAR').build()
+        sinon.spy(this.pouch, 'put')
+
+        await this.merge.addFileAsync(this.side, doc)
+
+        should(this.merge.resolveConflictAsync).not.have.been.called()
+        should(this.pouch.put).have.called()
       })
     })
   })
@@ -207,6 +237,32 @@ describe('Merge', function () {
       const result = await this.pouch.db.get(doc._id)
       should(result).deepEqual(old)
     })
+
+    onPlatforms('win32', 'darwin', () => {
+      it('resolves an identity conflict with an existing dir', async function () {
+        const alfred = await builders.dir().path('alfred').create()
+        const Alfred = await builders.dir().path('Alfred').build()
+
+        await this.merge.putFolderAsync(this.side, Alfred)
+
+        should(await this.pouch.db.get(Alfred._id)).deepEqual(alfred)
+        should(this.merge.resolveConflictAsync).have.been.calledWith(this.side, Alfred)
+      })
+    })
+
+    onPlatform('linux', () => {
+      it('does not have identity conflicts', async function () {
+        const alfred = await builders.dir().path('alfred').create()
+        const Alfred = await builders.dir().path('Alfred').build()
+
+        await this.merge.putFolderAsync(this.side, Alfred)
+
+        should(this.merge.resolveConflictAsync).not.have.been.called()
+        // Same as Alfred except _rev was added
+        should(await this.pouch.db.get(Alfred._id)).have.properties(Alfred)
+        should(await this.pouch.db.get(alfred._id)).deepEqual(alfred)
+      })
+    })
   })
 
   describe('moveFile', function () {
@@ -322,6 +378,24 @@ describe('Merge', function () {
       const info = await infoPromise
       should(info).have.property('id', was._id)
       should(info.doc).have.property('moveTo', doc._id)
+    })
+
+    onPlatforms('win32', 'darwin', () => {
+      it('resolves an identity conflict with an existing file', async function () {
+        const identical = await builders.file().path('QUX').create()
+        const was = builders.file().path('baz').remoteId().upToDate().build()
+        const doc = _.defaults({_id: identical._id, path: 'qux'}, was)
+        sinon.spy(this.pouch, 'put')
+        sinon.spy(this.pouch, 'bulkDocs')
+
+        await this.merge.moveFileAsync(this.side, doc, was)
+
+        should(this.merge.resolveConflictAsync.args).deepEqual([
+          [this.side, doc, identical]
+        ])
+        should(this.pouch.put).not.have.been.called()
+        should(this.pouch.bulkDocs).not.have.been.called()
+      })
     })
   })
 
